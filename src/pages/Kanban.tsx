@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,73 +27,80 @@ const initialData = {
   tasks: {
     "task-1": {
       id: "task-1",
-      title: "Planejar estrutura do projeto",
-      description: "Definir as principais tecnologias e bibliotecas a serem utilizadas.",
-      priority: "high",
-      department: "Desenvolvimento",
-      assignee: "João",
-      dueDate: "2024-07-10",
+      title: "Manutenção preventiva da linha 1",
+      description: "Realizar inspeção e manutenção preventiva de rotina na linha de produção 1",
+      priority: "medium",
+      department: "Manutenção",
+      assignee: "João Silva",
+      dueDate: "2023-07-30",
+      createdAt: "2023-07-15",
     },
     "task-2": {
       id: "task-2",
-      title: "Configurar ambiente de desenvolvimento",
-      description: "Instalar as dependências e configurar o ambiente para todos os desenvolvedores.",
-      priority: "medium",
-      department: "Infraestrutura",
-      assignee: "Maria",
-      dueDate: "2024-07-12",
+      title: "Auditoria de qualidade",
+      description: "Conduzir auditoria de qualidade no processo de produção conforme procedimentos ISO",
+      priority: "high",
+      department: "Qualidade",
+      assignee: "Maria Santos",
+      dueDate: "2023-07-25",
+      createdAt: "2023-07-10",
     },
     "task-3": {
       id: "task-3",
-      title: "Implementar autenticação de usuários",
-      description: "Criar o sistema de login e registro de usuários com segurança.",
+      title: "Implementar novo sistema de monitoramento",
+      description: "Instalar e configurar o novo sistema de monitoramento em tempo real para a linha de produção",
       priority: "high",
-      department: "Desenvolvimento",
-      assignee: "Carlos",
-      dueDate: "2024-07-15",
+      department: "Inovação",
+      assignee: "Carlos Oliveira",
+      dueDate: "2023-08-15",
+      createdAt: "2023-07-05",
     },
     "task-4": {
       id: "task-4",
-      title: "Desenvolver interface do usuário",
-      description: "Criar a interface principal do usuário com React e Tailwind CSS.",
+      title: "Treinamento de segurança",
+      description: "Conduzir treinamento de segurança para novos funcionários da produção",
       priority: "medium",
-      department: "Design",
-      assignee: "Ana",
-      dueDate: "2024-07-18",
+      department: "Produção",
+      assignee: "Ana Costa",
+      dueDate: "2023-07-28",
+      createdAt: "2023-07-12",
     },
     "task-5": {
       id: "task-5",
-      title: "Testar funcionalidades básicas",
-      description: "Realizar testes unitários e de integração nas principais funcionalidades.",
-      priority: "medium",
-      department: "Qualidade",
-      assignee: "Lucas",
-      dueDate: "2024-07-20",
+      title: "Revisar procedimentos de manutenção",
+      description: "Atualizar documentação de procedimentos de manutenção preventiva e corretiva",
+      priority: "low",
+      department: "Manutenção",
+      assignee: "Pedro Alves",
+      dueDate: "2023-08-10",
+      createdAt: "2023-07-20",
     },
   },
   columns: {
     "column-1": {
       id: "column-1",
-      title: "A Fazer",
-      taskIds: ["task-1", "task-2"],
+      title: "Pendente",
+      taskIds: ["task-1", "task-5"],
     },
     "column-2": {
       id: "column-2",
-      title: "Em Progresso",
-      taskIds: ["task-3"],
+      title: "Em Andamento",
+      taskIds: ["task-2", "task-4"],
     },
     "column-3": {
       id: "column-3",
       title: "Concluído",
-      taskIds: ["task-4", "task-5"],
+      taskIds: ["task-3"],
     },
   },
+  // Facilita a reordenação das colunas
   columnOrder: ["column-1", "column-2", "column-3"],
 };
 
 const Kanban = () => {
   const [data, setData] = useState(initialData);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -101,16 +109,14 @@ const Kanban = () => {
     assignee: "",
     dueDate: new Date().toISOString().substring(0, 10),
   });
-  const [editingTask, setEditingTask] = useState(null);
+  
   const { toast } = useToast();
 
   const handleDragEnd = (result) => {
     const { destination, source, draggableId } = result;
 
-    if (!destination) {
-      return;
-    }
-
+    // Se não tiver destino (arrastar para fora) ou o destino for o mesmo lugar, não faz nada
+    if (!destination) return;
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
@@ -118,56 +124,58 @@ const Kanban = () => {
       return;
     }
 
-    const start = data.columns[source.droppableId];
-    const finish = data.columns[destination.droppableId];
+    const sourceColumn = data.columns[source.droppableId];
+    const destColumn = data.columns[destination.droppableId];
 
-    if (start === finish) {
-      const newTaskIds = Array.from(start.taskIds);
+    // Reordenação na mesma coluna
+    if (sourceColumn === destColumn) {
+      const newTaskIds = Array.from(sourceColumn.taskIds);
       newTaskIds.splice(source.index, 1);
       newTaskIds.splice(destination.index, 0, draggableId);
 
       const newColumn = {
-        ...start,
+        ...sourceColumn,
         taskIds: newTaskIds,
       };
 
-      const newData = {
+      setData({
         ...data,
         columns: {
           ...data.columns,
           [newColumn.id]: newColumn,
         },
-      };
-
-      setData(newData);
+      });
       return;
     }
 
-    // Moving from one list to another
-    const startTaskIds = Array.from(start.taskIds);
-    startTaskIds.splice(source.index, 1);
-    const newStart = {
-      ...start,
-      taskIds: startTaskIds,
+    // Movendo de uma coluna para outra
+    const sourceTaskIds = Array.from(sourceColumn.taskIds);
+    sourceTaskIds.splice(source.index, 1);
+    const newSourceColumn = {
+      ...sourceColumn,
+      taskIds: sourceTaskIds,
     };
 
-    const finishTaskIds = Array.from(finish.taskIds);
-    finishTaskIds.splice(destination.index, 0, draggableId);
-    const newFinish = {
-      ...finish,
-      taskIds: finishTaskIds,
+    const destTaskIds = Array.from(destColumn.taskIds);
+    destTaskIds.splice(destination.index, 0, draggableId);
+    const newDestColumn = {
+      ...destColumn,
+      taskIds: destTaskIds,
     };
 
-    const newData = {
+    setData({
       ...data,
       columns: {
         ...data.columns,
-        [newStart.id]: newStart,
-        [newFinish.id]: newFinish,
+        [newSourceColumn.id]: newSourceColumn,
+        [newDestColumn.id]: newDestColumn,
       },
-    };
+    });
 
-    setData(newData);
+    toast({
+      title: "Tarefa movida",
+      description: `A tarefa foi movida para ${destColumn.title}`,
+    });
   };
 
   const handleEditTask = (task) => {
@@ -184,67 +192,98 @@ const Kanban = () => {
   };
 
   const handleDeleteTask = (taskId) => {
-    const newData = {
-      ...data,
-      tasks: { ...data.tasks },
-      columns: { ...data.columns },
-    };
+    // Cria uma cópia das tarefas sem a tarefa a ser excluída
+    const newTasks = { ...data.tasks };
+    delete newTasks[taskId];
 
-    delete newData.tasks[taskId];
-
-    for (const columnId in newData.columns) {
-      newData.columns[columnId].taskIds = newData.columns[columnId].taskIds.filter(
+    // Atualiza as colunas removendo o ID da tarefa
+    const newColumns = { ...data.columns };
+    for (const columnId in newColumns) {
+      newColumns[columnId].taskIds = newColumns[columnId].taskIds.filter(
         (id) => id !== taskId
       );
     }
 
-    setData(newData);
+    setData({
+      ...data,
+      tasks: newTasks,
+      columns: newColumns,
+    });
+
     toast({
-      title: "Tarefa excluída!",
-      description: "A tarefa foi removida com sucesso.",
+      title: "Tarefa excluída",
+      description: "A tarefa foi excluída com sucesso",
+      variant: "destructive",
     });
   };
 
   const handleAddOrUpdateTask = () => {
-    if (newTask.title.trim() === "" || newTask.description.trim() === "") {
+    if (!newTask.title.trim()) {
       toast({
-        title: "Erro!",
-        description: "Título e descrição são obrigatórios.",
+        title: "Erro",
+        description: "O título da tarefa é obrigatório",
         variant: "destructive",
       });
       return;
     }
 
-    const taskId = editingTask ? editingTask.id : `task-${Date.now()}`;
-    const updatedTask = {
-      id: taskId,
-      title: newTask.title,
-      description: newTask.description,
-      priority: newTask.priority,
-      department: newTask.department,
-      assignee: newTask.assignee,
-      dueDate: newTask.dueDate,
-    };
-
-    const newData = {
-      ...data,
-      tasks: {
+    if (editingTask) {
+      // Atualiza uma tarefa existente
+      const updatedTasks = {
         ...data.tasks,
-        [taskId]: updatedTask,
-      },
-    };
+        [editingTask.id]: {
+          ...data.tasks[editingTask.id],
+          ...newTask,
+        },
+      };
 
-    if (!editingTask) {
-      const columnId = "column-1";
-      newData.columns[columnId].taskIds = [
-        taskId,
-        ...newData.columns[columnId].taskIds,
-      ];
+      setData({
+        ...data,
+        tasks: updatedTasks,
+      });
+
+      toast({
+        title: "Tarefa atualizada",
+        description: "A tarefa foi atualizada com sucesso",
+      });
+    } else {
+      // Cria uma nova tarefa
+      const taskId = `task-${Date.now()}`;
+      const newTaskWithId = {
+        id: taskId,
+        ...newTask,
+        createdAt: new Date().toISOString().substring(0, 10),
+      };
+
+      // Adiciona a nova tarefa ao estado
+      const updatedTasks = {
+        ...data.tasks,
+        [taskId]: newTaskWithId,
+      };
+
+      // Adiciona o ID da tarefa à primeira coluna (Pendente)
+      const firstColumn = data.columns["column-1"];
+      const updatedFirstColumn = {
+        ...firstColumn,
+        taskIds: [...firstColumn.taskIds, taskId],
+      };
+
+      setData({
+        ...data,
+        tasks: updatedTasks,
+        columns: {
+          ...data.columns,
+          "column-1": updatedFirstColumn,
+        },
+      });
+
+      toast({
+        title: "Tarefa criada",
+        description: "A nova tarefa foi criada com sucesso",
+      });
     }
 
-    setData(newData);
-    setIsDialogOpen(false);
-    setEditingTask(null);
+    // Limpa o formulário e fecha o modal
     setNewTask({
       title: "",
       description: "",
@@ -253,43 +292,20 @@ const Kanban = () => {
       assignee: "",
       dueDate: new Date().toISOString().substring(0, 10),
     });
-
-    toast({
-      title: editingTask ? "Tarefa atualizada!" : "Tarefa adicionada!",
-      description: "A tarefa foi salva com sucesso.",
-    });
+    setEditingTask(null);
+    setIsDialogOpen(false);
   };
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
       case "high":
-        return (
-          <Badge variant="destructive" className="flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            Alta
-          </Badge>
-        );
+        return <Badge className="bg-red-500">Alta</Badge>;
       case "medium":
-        return (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            Média
-          </Badge>
-        );
+        return <Badge className="bg-yellow-500">Média</Badge>;
       case "low":
-        return (
-          <Badge variant="outline" className="flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" />
-            Baixa
-          </Badge>
-        );
+        return <Badge className="bg-green-500">Baixa</Badge>;
       default:
-        return (
-          <Badge variant="outline" className="flex items-center gap-1">
-            <ClipboardList className="h-3 w-3" />
-            Normal
-          </Badge>
-        );
+        return null;
     }
   };
 
@@ -410,112 +426,125 @@ const Kanban = () => {
 
       {/* Modal para criar/editar tarefa */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
+            <DialogTitle>
+              {editingTask ? "Editar Tarefa" : "Nova Tarefa"}
+            </DialogTitle>
             <DialogDescription>
               {editingTask
-                ? "Edite os campos da tarefa."
-                : "Adicione uma nova tarefa ao quadro."}
+                ? "Edite os detalhes da tarefa existente"
+                : "Preencha os detalhes para criar uma nova tarefa"}
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Título
-              </Label>
+            <div className="grid gap-2">
+              <Label htmlFor="title">Título</Label>
               <Input
-                type="text"
                 id="title"
                 value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setNewTask({ ...newTask, title: e.target.value })
+                }
+                placeholder="Título da tarefa"
               />
             </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="description" className="text-right mt-2">
-                Descrição
-              </Label>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
                 id="description"
                 value={newTask.description}
                 onChange={(e) =>
                   setNewTask({ ...newTask, description: e.target.value })
                 }
-                className="col-span-3"
+                placeholder="Descrição detalhada da tarefa"
+                rows={3}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="priority" className="text-right">
-                Prioridade
-              </Label>
-              <Select
-                onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
-                defaultValue={newTask.priority}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecione a prioridade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="low">Baixa</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="priority">Prioridade</Label>
+                <Select
+                  value={newTask.priority}
+                  onValueChange={(value) =>
+                    setNewTask({ ...newTask, priority: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="low">Baixa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="department">Departamento</Label>
+                <Select
+                  value={newTask.department}
+                  onValueChange={(value) =>
+                    setNewTask({ ...newTask, department: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o departamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Manutenção">Manutenção</SelectItem>
+                    <SelectItem value="Qualidade">Qualidade</SelectItem>
+                    <SelectItem value="Produção">Produção</SelectItem>
+                    <SelectItem value="Inovação">Inovação</SelectItem>
+                    <SelectItem value="Administração">Administração</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="department" className="text-right">
-                Departamento
-              </Label>
-              <Select
-                onValueChange={(value) =>
-                  setNewTask({ ...newTask, department: value })
-                }
-                defaultValue={newTask.department}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecione o departamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Produção">Produção</SelectItem>
-                  <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
-                  <SelectItem value="Design">Design</SelectItem>
-                  <SelectItem value="Qualidade">Qualidade</SelectItem>
-                  <SelectItem value="Infraestrutura">Infraestrutura</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="assignee" className="text-right">
-                Responsável
-              </Label>
-              <Input
-                type="text"
-                id="assignee"
-                value={newTask.assignee}
-                onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dueDate" className="text-right">
-                Data de Entrega
-              </Label>
-              <Input
-                type="date"
-                id="dueDate"
-                value={newTask.dueDate}
-                onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                className="col-span-3"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="assignee">Responsável</Label>
+                <Input
+                  id="assignee"
+                  value={newTask.assignee}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, assignee: e.target.value })
+                  }
+                  placeholder="Nome do responsável"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="dueDate">Data de Vencimento</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={newTask.dueDate}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, dueDate: e.target.value })
+                  }
+                />
+              </div>
             </div>
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setIsDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDialogOpen(false);
+                setEditingTask(null);
+              }}
+            >
               Cancelar
             </Button>
-            <Button type="submit" onClick={handleAddOrUpdateTask}>
-              {editingTask ? "Salvar Alterações" : "Adicionar Tarefa"}
+            <Button onClick={handleAddOrUpdateTask}>
+              {editingTask ? "Atualizar" : "Criar"}
             </Button>
           </DialogFooter>
         </DialogContent>
