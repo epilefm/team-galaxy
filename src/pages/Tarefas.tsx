@@ -46,11 +46,14 @@ import {
   ArrowUpDown,
   BarChart4,
   AlertTriangle,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { format, parse, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Dados de exemplo
 const initialTasks = [
@@ -64,6 +67,7 @@ const initialTasks = [
     dueDate: "2023-07-30",
     createdAt: "2023-07-15",
     status: "Pendente",
+    createdBy: "admin@example.com"
   },
   {
     id: "task-2",
@@ -75,6 +79,7 @@ const initialTasks = [
     dueDate: "2023-07-25",
     createdAt: "2023-07-10",
     status: "Em Andamento",
+    createdBy: "maria.santos@example.com"
   },
   {
     id: "task-3",
@@ -86,6 +91,7 @@ const initialTasks = [
     dueDate: "2023-08-15",
     createdAt: "2023-07-05",
     status: "Concluído",
+    createdBy: "carlos.oliveira@example.com"
   },
   {
     id: "task-4",
@@ -97,6 +103,7 @@ const initialTasks = [
     dueDate: "2023-07-28",
     createdAt: "2023-07-12",
     status: "Em Andamento",
+    createdBy: "ana.costa@example.com"
   },
   {
     id: "task-5",
@@ -108,15 +115,38 @@ const initialTasks = [
     dueDate: "2023-08-10",
     createdAt: "2023-07-20",
     status: "Pendente",
+    createdBy: "pedro.alves@example.com"
   },
+];
+
+// Gerar array de anos (do ano atual até 5 anos atrás)
+const getCurrentYear = () => new Date().getFullYear();
+const years = Array.from({ length: 6 }, (_, i) => getCurrentYear() - i);
+
+// Meses em português
+const months = [
+  { value: "01", label: "Janeiro" },
+  { value: "02", label: "Fevereiro" },
+  { value: "03", label: "Março" },
+  { value: "04", label: "Abril" },
+  { value: "05", label: "Maio" },
+  { value: "06", label: "Junho" },
+  { value: "07", label: "Julho" },
+  { value: "08", label: "Agosto" },
+  { value: "09", label: "Setembro" },
+  { value: "10", label: "Outubro" },
+  { value: "11", label: "Novembro" },
+  { value: "12", label: "Dezembro" }
 ];
 
 const Tarefas = () => {
   const [tasks, setTasks] = useState(initialTasks);
   const [searchTerm, setSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState(getCurrentYear().toString());
   const [sortField, setSortField] = useState("dueDate");
   const [sortDirection, setSortDirection] = useState("asc");
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -135,16 +165,30 @@ const Tarefas = () => {
 
   const { toast } = useToast();
 
-  // Filtros combinados
+  // Simula um usuário logado (em um app real, isso viria de um contexto de autenticação)
+  const loggedUser = { email: "admin@example.com", role: "admin" };
+  const isAdmin = loggedUser.role === "admin";
+
+  // Filtros combinados com o filtro adicional de mês e ano
   const filteredTasks = tasks
     .filter((task) =>
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.assignee.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter((task) => !departmentFilter || task.department === departmentFilter)
-    .filter((task) => !statusFilter || task.status === statusFilter)
-    .filter((task) => !priorityFilter || task.priority === priorityFilter)
+    .filter((task) => departmentFilter === "all" || task.department === departmentFilter)
+    .filter((task) => statusFilter === "all" || task.status === statusFilter)
+    .filter((task) => priorityFilter === "all" || task.priority === priorityFilter)
+    .filter((task) => {
+      if (monthFilter === "all" && yearFilter === "all") return true;
+      
+      const taskDate = parseISO(task.dueDate);
+      const taskYear = format(taskDate, "yyyy");
+      const taskMonth = format(taskDate, "MM");
+      
+      return (monthFilter === "all" || taskMonth === monthFilter) && 
+             (yearFilter === "all" || taskYear === yearFilter);
+    })
     .sort((a, b) => {
       if (sortDirection === "asc") {
         return a[sortField] > b[sortField] ? 1 : -1;
@@ -206,6 +250,16 @@ const Tarefas = () => {
   };
 
   const handleDeleteTask = (task) => {
+    // Verificar se o usuário é um administrador ou o criador da tarefa
+    if (!isAdmin && loggedUser.email !== task.createdBy) {
+      toast({
+        title: "Permissão negada",
+        description: "Apenas administradores ou o criador da tarefa podem excluí-la",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSelectedTask(task);
     setIsDeleteOpen(true);
   };
@@ -248,6 +302,15 @@ const Tarefas = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    try {
+      const date = parseISO(dateString);
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   return (
     <div className="container p-4 mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -263,7 +326,7 @@ const Tarefas = () => {
           <CardDescription>Encontre tarefas específicas usando os filtros abaixo</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -273,41 +336,76 @@ const Tarefas = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Departamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="Manutenção">Manutenção</SelectItem>
-                <SelectItem value="Qualidade">Qualidade</SelectItem>
-                <SelectItem value="Produção">Produção</SelectItem>
-                <SelectItem value="Inovação">Inovação</SelectItem>
-                <SelectItem value="Administração">Administração</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                <SelectItem value="Concluído">Concluído</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="low">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Manutenção">Manutenção</SelectItem>
+                  <SelectItem value="Qualidade">Qualidade</SelectItem>
+                  <SelectItem value="Produção">Produção</SelectItem>
+                  <SelectItem value="Inovação">Inovação</SelectItem>
+                  <SelectItem value="Administração">Administração</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={monthFilter} onValueChange={setMonthFilter}>
+                <SelectTrigger className="flex items-center">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os meses</SelectItem>
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={yearFilter} onValueChange={setYearFilter}>
+                <SelectTrigger className="flex items-center">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os anos</SelectItem>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -407,7 +505,7 @@ const Tarefas = () => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {task.dueDate}
+                      {formatDate(task.dueDate)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -429,7 +527,8 @@ const Tarefas = () => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDeleteTask(task)}
-                          className="text-red-600"
+                          className={`${isAdmin || loggedUser.email === task.createdBy ? 'text-red-600' : 'text-gray-400'}`}
+                          disabled={!isAdmin && loggedUser.email !== task.createdBy}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Excluir</span>
@@ -483,14 +582,21 @@ const Tarefas = () => {
                   <p className="font-semibold">Data de Criação</p>
                   <div className="flex items-center gap-1 mt-1">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {selectedTask.createdAt}
+                    {formatDate(selectedTask.createdAt)}
                   </div>
                 </div>
                 <div>
                   <p className="font-semibold">Data Limite</p>
                   <div className="flex items-center gap-1 mt-1">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {selectedTask.dueDate}
+                    {formatDate(selectedTask.dueDate)}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-semibold">Criado por</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    {selectedTask.createdBy}
                   </div>
                 </div>
               </div>
@@ -623,6 +729,13 @@ const Tarefas = () => {
                   }
                 />
               </div>
+              
+              {selectedTask.createdBy !== loggedUser.email && !isAdmin && (
+                <div className="bg-amber-50 p-3 rounded-md border border-amber-200 text-amber-700 text-sm">
+                  <AlertTriangle className="h-4 w-4 inline-block mr-2" />
+                  <span>Você está editando uma tarefa criada por outro usuário.</span>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
@@ -648,6 +761,10 @@ const Tarefas = () => {
               <p className="text-sm text-muted-foreground">
                 {selectedTask.department} - {selectedTask.assignee}
               </p>
+              <div className="mt-2 bg-slate-50 p-2 rounded-md text-sm border border-slate-200">
+                <p className="font-semibold">Criado por:</p>
+                <p>{selectedTask.createdBy}</p>
+              </div>
             </div>
           )}
           <DialogFooter>

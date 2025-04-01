@@ -11,7 +11,8 @@ import {
   DialogDescription, 
   DialogFooter, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogClose
 } from "@/components/ui/dialog";
 import { 
   DropdownMenu, 
@@ -34,7 +35,10 @@ import {
   UserCheck, 
   UserPlus,
   Mail,
-  BarChart4
+  BarChart4,
+  Key,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -46,7 +50,8 @@ const initialUsers = [
     email: "admin@example.com",
     department: "Administração",
     role: "admin",
-    status: "active"
+    status: "active",
+    password: "admin123"  // Normalmente, armazenaríamos apenas hashes, não senhas em texto plano
   },
   {
     id: "2",
@@ -54,7 +59,8 @@ const initialUsers = [
     email: "joao.silva@example.com",
     department: "Manutenção",
     role: "user",
-    status: "active"
+    status: "active",
+    password: "joao123"
   },
   {
     id: "3",
@@ -62,7 +68,8 @@ const initialUsers = [
     email: "maria.santos@example.com",
     department: "Qualidade",
     role: "user",
-    status: "active"
+    status: "active",
+    password: "maria123"
   },
   {
     id: "4",
@@ -70,7 +77,8 @@ const initialUsers = [
     email: "carlos.oliveira@example.com",
     department: "Inovação",
     role: "admin",
-    status: "active"
+    status: "active",
+    password: "carlos123"
   },
   {
     id: "5",
@@ -78,7 +86,8 @@ const initialUsers = [
     email: "ana.costa@example.com",
     department: "Produção",
     role: "user",
-    status: "inactive"
+    status: "inactive",
+    password: "ana123"
   },
   {
     id: "6",
@@ -86,7 +95,8 @@ const initialUsers = [
     email: "pedro.alves@example.com",
     department: "Manutenção",
     role: "user",
-    status: "active"
+    status: "active",
+    password: "pedro123"
   },
 ];
 
@@ -96,16 +106,25 @@ const Usuarios = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [userPassword, setUserPassword] = useState("");
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     department: "Produção",
     role: "user",
     status: "active",
+    password: "",
   });
 
   const { toast } = useToast();
+
+  // Simula um usuário logado (em um app real, isso viria de um contexto de autenticação)
+  const loggedUser = { email: "admin@example.com", role: "admin" };
+  const isAdmin = loggedUser.role === "admin";
 
   const filteredUsers = users.filter(
     (user) =>
@@ -115,10 +134,10 @@ const Usuarios = () => {
   );
 
   const handleAddUser = () => {
-    if (!newUser.name || !newUser.email) {
+    if (!newUser.name || !newUser.email || !newUser.password) {
       toast({
         title: "Erro",
-        description: "Nome e email são obrigatórios",
+        description: "Nome, email e senha são obrigatórios",
         variant: "destructive",
       });
       return;
@@ -163,6 +182,7 @@ const Usuarios = () => {
       department: "Produção",
       role: "user",
       status: "active",
+      password: "",
     });
     setIsAddUserOpen(false);
   };
@@ -175,6 +195,7 @@ const Usuarios = () => {
       department: user.department,
       role: user.role,
       status: user.status,
+      password: user.password,
     });
     setIsEditUserOpen(true);
   };
@@ -251,6 +272,48 @@ const Usuarios = () => {
     });
     
     setIsDeleteUserOpen(false);
+  };
+
+  const handleViewPassword = (user) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas administradores podem gerenciar senhas",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedUser(user);
+    setUserPassword(user.password);
+    setNewPassword("");
+    setPasswordVisible(false);
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleUpdatePassword = () => {
+    if (!newPassword.trim()) {
+      toast({
+        title: "Erro",
+        description: "A nova senha não pode estar vazia",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Atualiza a senha do usuário selecionado
+    setUsers(
+      users.map((user) =>
+        user.id === selectedUser.id ? { ...user, password: newPassword } : user
+      )
+    );
+
+    toast({
+      title: "Senha atualizada",
+      description: "A senha foi atualizada com sucesso",
+    });
+
+    setIsPasswordDialogOpen(false);
   };
 
   const getRoleBadge = (role) => {
@@ -367,6 +430,12 @@ const Usuarios = () => {
                           <Pencil className="mr-2 h-4 w-4" />
                           <span>Editar</span>
                         </DropdownMenuItem>
+                        {isAdmin && (
+                          <DropdownMenuItem onClick={() => handleViewPassword(user)}>
+                            <Key className="mr-2 h-4 w-4" />
+                            <span>Gerenciar Senha</span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDeleteUser(user)}
@@ -414,6 +483,31 @@ const Usuarios = () => {
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 placeholder="email@exemplo.com"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={passwordVisible ? "text" : "password"}
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  placeholder="Digite a senha"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setPasswordVisible(!passwordVisible)}
+                >
+                  {passwordVisible ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="department">Departamento</Label>
@@ -573,6 +667,61 @@ const Usuarios = () => {
               Cancelar
             </Button>
             <Button onClick={handleUpdateUser}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Senha</DialogTitle>
+            <DialogDescription>
+              {selectedUser && `Visualize ou altere a senha de ${selectedUser.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Senha Atual</Label>
+                <div className="relative">
+                  <Input
+                    type={passwordVisible ? "text" : "password"}
+                    value={userPassword}
+                    readOnly
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setPasswordVisible(!passwordVisible)}
+                  >
+                    {passwordVisible ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Nova Senha</Label>
+                <div className="relative">
+                  <Input
+                    type={passwordVisible ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Digite a nova senha"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdatePassword}>Atualizar Senha</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
