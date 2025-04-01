@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,71 +14,74 @@ import Usuarios from "./pages/Usuarios";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Criando uma nova instância do QueryClient
 const queryClient = new QueryClient();
 
 const App = () => {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            {isLoggedIn && <Navbar />}
-            <div className="flex-1">
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                
-                {/* Rotas protegidas */}
-                <Route 
-                  path="/" 
-                  element={
-                    isLoggedIn ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
-                  } 
-                />
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/kanban" 
-                  element={
-                    <ProtectedRoute>
-                      <Kanban />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/tarefas" 
-                  element={
-                    <ProtectedRoute>
-                      <Tarefas />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/usuarios" 
-                  element={
-                    <ProtectedRoute>
-                      <Usuarios />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Rota para página não encontrada */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <div className="min-h-screen flex flex-col">
+              {isLoggedIn && <Navbar />}
+              <div className="flex-1">
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  
+                  {/* Rotas protegidas */}
+                  <Route 
+                    path="/" 
+                    element={
+                      isLoggedIn ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
+                    } 
+                  />
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/kanban" 
+                    element={
+                      <ProtectedRoute>
+                        <Kanban />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/tarefas" 
+                    element={
+                      <ProtectedRoute>
+                        <Tarefas />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/usuarios" 
+                    element={
+                      <ProtectedRoute>
+                        <Usuarios />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Rota para página não encontrada */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
             </div>
-          </div>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 };
 
