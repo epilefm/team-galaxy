@@ -58,7 +58,12 @@ const Dashboard = () => {
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const handleStatusCardClick = (status) => {
-    navigate(`/tarefas?status=${status}`);
+    // Navegação para a página de tarefas com o filtro de status
+    if (status === "all") {
+      navigate('/tarefas');
+    } else {
+      navigate(`/tarefas?status=${status}`);
+    }
   };
 
   return (
@@ -67,7 +72,7 @@ const Dashboard = () => {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <Card 
-          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-slate-50"
+          className="cursor-pointer transform transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:bg-slate-50 active:translate-y-0 active:shadow-md"
           onClick={() => handleStatusCardClick("all")}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -82,7 +87,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-green-50"
+          className="cursor-pointer transform transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:bg-green-50 active:translate-y-0 active:shadow-md"
           onClick={() => handleStatusCardClick("Concluído")}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -97,7 +102,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-blue-50"
+          className="cursor-pointer transform transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:bg-blue-50 active:translate-y-0 active:shadow-md"
           onClick={() => handleStatusCardClick("Em Andamento")}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -114,7 +119,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-red-50"
+          className="cursor-pointer transform transition-all duration-300 hover:shadow-lg hover:-translate-y-2 hover:bg-red-50 active:translate-y-0 active:shadow-md"
           onClick={() => handleStatusCardClick("Atrasado")}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">

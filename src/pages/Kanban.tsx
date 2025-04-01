@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLocation } from "react-router-dom";
 import { 
   Plus, 
   Pencil, 
@@ -31,88 +32,166 @@ import { format, isAfter, isBefore, parseISO, differenceInDays, isValid, addDays
 import { ptBR } from "date-fns/locale";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
+// Projetos simulados - em uma aplicação real, isso viria de uma API ou context
+const projects = [
+  { id: "proj-1", name: "Automação da Linha de Produção" },
+  { id: "proj-2", name: "Certificação ISO 9001" },
+  { id: "proj-3", name: "Treinamento de Segurança" }
+];
+
 const initialData = {
-  tasks: {
-    "task-1": {
-      id: "task-1",
-      title: "Manutenção preventiva da linha 1",
-      description: "Realizar inspeção e manutenção preventiva de rotina na linha de produção 1",
-      priority: "medium",
-      departments: ["Manutenção"],
-      assignees: ["João Silva"],
-      dueDate: "2023-07-30",
-      createdAt: "2023-07-15",
-      subtasks: [],
-      completedDate: null
+  "proj-1": {
+    tasks: {
+      "task-1": {
+        id: "task-1",
+        title: "Manutenção preventiva da linha 1",
+        description: "Realizar inspeção e manutenção preventiva de rotina na linha de produção 1",
+        priority: "medium",
+        departments: ["Manutenção"],
+        assignees: ["João Silva"],
+        dueDate: "2023-07-30",
+        createdAt: "2023-07-15",
+        subtasks: [],
+        completedDate: null,
+        projectId: "proj-1"
+      },
+      "task-2": {
+        id: "task-2",
+        title: "Instalação de sensores",
+        description: "Instalar sensores de temperatura na linha de produção",
+        priority: "high",
+        departments: ["Manutenção", "TI"],
+        assignees: ["Pedro Alves"],
+        dueDate: "2023-07-25",
+        createdAt: "2023-07-10",
+        subtasks: [],
+        completedDate: null,
+        projectId: "proj-1"
+      }
     },
-    "task-2": {
-      id: "task-2",
-      title: "Auditoria de qualidade",
-      description: "Conduzir auditoria de qualidade no processo de produção conforme procedimentos ISO",
-      priority: "high",
-      departments: ["Qualidade"],
-      assignees: ["Maria Santos", "Carlos Pereira"],
-      dueDate: "2023-07-25",
-      createdAt: "2023-07-10",
-      subtasks: [],
-      completedDate: null
+    columns: {
+      "column-1": {
+        id: "column-1",
+        title: "Pendente",
+        taskIds: ["task-1"],
+      },
+      "column-2": {
+        id: "column-2",
+        title: "Em Andamento",
+        taskIds: ["task-2"],
+      },
+      "column-3": {
+        id: "column-3",
+        title: "Concluído",
+        taskIds: [],
+      },
     },
-    "task-3": {
-      id: "task-3",
-      title: "Implementar novo sistema de monitoramento",
-      description: "Instalar e configurar o novo sistema de monitoramento em tempo real para a linha de produção",
-      priority: "high",
-      departments: ["Inovação", "TI"],
-      assignees: ["Carlos Oliveira"],
-      dueDate: "2023-08-15",
-      createdAt: "2023-07-05",
-      subtasks: [],
-      completedDate: "2023-08-10"
-    },
-    "task-4": {
-      id: "task-4",
-      title: "Treinamento de segurança",
-      description: "Conduzir treinamento de segurança para novos funcionários da produção",
-      priority: "medium",
-      departments: ["Produção", "RH"],
-      assignees: ["Ana Costa"],
-      dueDate: "2023-07-28",
-      createdAt: "2023-07-12",
-      subtasks: [],
-      completedDate: null
-    },
-    "task-5": {
-      id: "task-5",
-      title: "Revisar procedimentos de manutenção",
-      description: "Atualizar documentação de procedimentos de manutenção preventiva e corretiva",
-      priority: "low",
-      departments: ["Manutenção"],
-      assignees: ["Pedro Alves"],
-      dueDate: "2023-08-10",
-      createdAt: "2023-07-20",
-      subtasks: [],
-      completedDate: null
-    },
+    columnOrder: ["column-1", "column-2", "column-3"],
   },
-  columns: {
-    "column-1": {
-      id: "column-1",
-      title: "Pendente",
-      taskIds: ["task-1", "task-5"],
+  "proj-2": {
+    tasks: {
+      "task-3": {
+        id: "task-3",
+        title: "Auditoria interna",
+        description: "Realizar auditoria interna preparatória para ISO 9001",
+        priority: "urgent",
+        departments: ["Qualidade"],
+        assignees: ["Maria Santos"],
+        dueDate: "2023-08-15",
+        createdAt: "2023-07-05",
+        subtasks: [],
+        completedDate: "2023-08-10",
+        projectId: "proj-2"
+      },
+      "task-4": {
+        id: "task-4",
+        title: "Revisão de procedimentos",
+        description: "Revisar e atualizar procedimentos conforme requisitos ISO",
+        priority: "medium",
+        departments: ["Qualidade", "Produção"],
+        assignees: ["Carlos Pereira"],
+        dueDate: "2023-07-28",
+        createdAt: "2023-07-12",
+        subtasks: [],
+        completedDate: null,
+        projectId: "proj-2"
+      }
     },
-    "column-2": {
-      id: "column-2",
-      title: "Em Andamento",
-      taskIds: ["task-2", "task-4"],
+    columns: {
+      "column-1": {
+        id: "column-1",
+        title: "Pendente",
+        taskIds: [],
+      },
+      "column-2": {
+        id: "column-2",
+        title: "Em Andamento",
+        taskIds: ["task-4"],
+      },
+      "column-3": {
+        id: "column-3",
+        title: "Concluído",
+        taskIds: ["task-3"],
+      },
     },
-    "column-3": {
-      id: "column-3",
-      title: "Concluído",
-      taskIds: ["task-3"],
-    },
+    columnOrder: ["column-1", "column-2", "column-3"],
   },
-  // Facilita a reordenação das colunas
-  columnOrder: ["column-1", "column-2", "column-3"],
+  "proj-3": {
+    tasks: {
+      "task-5": {
+        id: "task-5",
+        title: "Preparar material de treinamento",
+        description: "Desenvolver apresentações e manuais para treinamento de segurança",
+        priority: "low",
+        departments: ["RH", "Segurança"],
+        assignees: ["Ana Costa"],
+        dueDate: "2023-08-10",
+        createdAt: "2023-07-20",
+        subtasks: [],
+        completedDate: null,
+        projectId: "proj-3"
+      }
+    },
+    columns: {
+      "column-1": {
+        id: "column-1",
+        title: "Pendente",
+        taskIds: ["task-5"],
+      },
+      "column-2": {
+        id: "column-2",
+        title: "Em Andamento",
+        taskIds: [],
+      },
+      "column-3": {
+        id: "column-3",
+        title: "Concluído",
+        taskIds: [],
+      },
+    },
+    columnOrder: ["column-1", "column-2", "column-3"],
+  },
+  "all": {
+    tasks: {},
+    columns: {
+      "column-1": {
+        id: "column-1",
+        title: "Pendente",
+        taskIds: [],
+      },
+      "column-2": {
+        id: "column-2",
+        title: "Em Andamento",
+        taskIds: [],
+      },
+      "column-3": {
+        id: "column-3",
+        title: "Concluído",
+        taskIds: [],
+      },
+    },
+    columnOrder: ["column-1", "column-2", "column-3"],
+  }
 };
 
 // Lista de departamentos disponíveis
@@ -126,11 +205,13 @@ const departmentOptions = [
   "Administração",
   "Logística",
   "Financeiro",
-  "Comercial"
+  "Comercial",
+  "Segurança"
 ];
 
 const Kanban = () => {
-  const [data, setData] = useState(initialData);
+  const [data, setData] = useState(null);
+  const [currentProject, setCurrentProject] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [newTask, setNewTask] = useState({
@@ -162,7 +243,46 @@ const Kanban = () => {
   const [expandedTasks, setExpandedTasks] = useState({});
   
   const { toast } = useToast();
+  const location = useLocation();
   const today = new Date();
+
+  // Usando useEffect para extrair o projeto da URL e inicializar os dados
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const projectId = params.get('project');
+
+    if (projectId && projects.find(p => p.id === projectId)) {
+      setCurrentProject(projectId);
+      setData(initialData[projectId]);
+    } else {
+      // Se não houver projeto especificado ou o projeto não existir, 
+      // use 'all' ou construa os dados combinados de todos os projetos
+      setCurrentProject('all');
+      
+      // Construir dados combinados para "Todos os projetos"
+      const allData = JSON.parse(JSON.stringify(initialData.all));
+      for (const projectId of Object.keys(initialData)) {
+        if (projectId === 'all') continue;
+        
+        // Combina todas as tarefas
+        Object.entries(initialData[projectId].tasks).forEach(([taskId, task]) => {
+          allData.tasks[taskId] = task;
+          
+          // Adiciona a tarefa à coluna apropriada
+          for (const columnId in initialData[projectId].columns) {
+            if (initialData[projectId].columns[columnId].taskIds.includes(taskId)) {
+              allData.columns[columnId].taskIds.push(taskId);
+            }
+          }
+        });
+      }
+      
+      setData(allData);
+    }
+  }, [location]);
+
+  // Aguardar até que os dados estejam carregados
+  if (!data) return <div className="flex justify-center items-center h-screen">Carregando...</div>;
 
   const handleDragEnd = (result) => {
     const { destination, source, draggableId } = result;
@@ -360,6 +480,7 @@ const Kanban = () => {
         id: taskId,
         ...newTask,
         createdAt: new Date().toISOString().substring(0, 10),
+        projectId: currentProject === 'all' ? projects[0].id : currentProject // Define o projeto
       };
 
       // Adiciona a nova tarefa ao estado
@@ -631,10 +752,16 @@ const Kanban = () => {
     return `${completed}/${subtasks.length}`;
   };
 
+  const getCurrentProjectName = () => {
+    if (currentProject === 'all') return "Todos os Projetos";
+    const project = projects.find(p => p.id === currentProject);
+    return project ? project.name : "Projeto";
+  };
+
   return (
     <div className="container p-4 mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quadro Kanban</h1>
+        <h1 className="text-2xl font-bold">Quadro Kanban: {getCurrentProjectName()}</h1>
         <Button onClick={() => {
           setEditingTask(null);
           setNewTask({

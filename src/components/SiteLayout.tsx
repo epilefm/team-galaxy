@@ -1,29 +1,46 @@
 
-import React, { useEffect } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
+import React from "react";
+import { Outlet, Link } from "react-router-dom";
 import ProjectSidebar from "./ProjectSidebar";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import Navbar from "./Navbar";
+import { useToast } from "@/components/ui/use-toast";
+import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const SiteLayout = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    // Redirecionar para o dashboard quando a rota é /
-    if (location.pathname === '/') {
-      navigate('/dashboard');
-    }
-  }, [location.pathname, navigate]);
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    
+    toast({
+      title: "Sessão encerrada",
+      description: "Você foi desconectado com sucesso.",
+    });
+    
+    navigate("/login");
+  };
 
   return (
-    <div className="min-h-screen flex">
-      <ProjectSidebar />
-      <div className="flex-1 pt-16 ml-0 md:ml-16">
-        <main className="p-4">
+    <div className="min-h-screen bg-background">
+      <Navbar>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          className="ml-auto text-muted-foreground hover:text-primary"
+          title="Sair"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
+      </Navbar>
+      <div className="flex">
+        <ProjectSidebar />
+        <main className="flex-1 ml-0 md:ml-16 pt-16">
           <Outlet />
         </main>
-        <Toaster />
       </div>
     </div>
   );
