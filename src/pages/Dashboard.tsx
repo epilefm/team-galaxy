@@ -2,12 +2,14 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PieChart, Pie, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { PieChart, Pie, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, AlertCircle, BarChart4, PieChart as PieChartIcon, LineChart as LineChartIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [tab, setTab] = useState("overview");
+  const navigate = useNavigate();
   
   // Dados simulados para os gráficos
   const statusData = [
@@ -55,12 +57,19 @@ const Dashboard = () => {
   const completedTasks = statusData.find(item => item.name === "Concluído")?.value || 0;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+  const handleStatusCardClick = (status) => {
+    navigate(`/tarefas?status=${status}`);
+  };
+
   return (
     <div className="container p-4 mx-auto">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-slate-50"
+          onClick={() => handleStatusCardClick("all")}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
             <BarChart4 className="h-4 w-4 text-muted-foreground" />
@@ -72,7 +81,10 @@ const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-green-50"
+          onClick={() => handleStatusCardClick("Concluído")}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Tarefas Concluídas</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -84,7 +96,10 @@ const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-blue-50"
+          onClick={() => handleStatusCardClick("Em Andamento")}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Em Andamento</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -98,7 +113,10 @@ const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-red-50"
+          onClick={() => handleStatusCardClick("Atrasado")}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Tarefas Atrasadas</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -163,7 +181,11 @@ const Dashboard = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 {statusData.map((status) => (
-                  <div key={status.name} className="flex items-center p-2 border rounded-md">
+                  <div 
+                    key={status.name} 
+                    className="flex items-center p-2 border rounded-md cursor-pointer transition-all duration-200 hover:shadow-md hover:bg-slate-50 hover:scale-105"
+                    onClick={() => handleStatusCardClick(status.name)}
+                  >
                     {getStatusIcon(status.name)}
                     <div className="ml-2">
                       <div className="text-sm font-medium">{status.name}</div>
@@ -193,7 +215,9 @@ const Dashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="total" fill="#3b82f6" name="Número de Tarefas" />
+                    <Bar dataKey="total" fill="#3b82f6" name="Número de Tarefas">
+                      <LabelList dataKey="total" position="inside" fill="#ffffff" />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -218,7 +242,9 @@ const Dashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="total" stroke="#3b82f6" name="Tarefas Concluídas" activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="total" stroke="#3b82f6" name="Tarefas Concluídas" activeDot={{ r: 8 }}>
+                      <LabelList dataKey="total" position="top" />
+                    </Line>
                   </LineChart>
                 </ResponsiveContainer>
               </div>
