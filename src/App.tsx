@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "./components/theme-provider";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './App.css';
 import Login from './pages/Login';
